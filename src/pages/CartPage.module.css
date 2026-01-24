@@ -1,0 +1,194 @@
+/* Cart Page Holiday Styling */
+
+.cartContainer {
+  background: #fffaf0;
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+.pageTitle {
+  color: #165b33;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-shadow: 0 2px 8px rgba(22, 91, 51, 0.1);
+}
+
+.pageTitle::before {
+  content: '🛍️';
+  font-size: 2rem;
+}
+
+.itemsWrapper {
+  border: 2px dashed #d42426;
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 24px rgba(212, 36, 38, 0.08);
+}
+
+.cartItemCard {
+  background: #ffffff;
+  border: 2px solid rgba(22, 91, 51, 0.15);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 16px rgba(212, 36, 38, 0.05);
+  transition: all 0.3s ease;
+}
+
+.cartItemCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(212, 36, 38, 0.12);
+  border-color: rgba(22, 91, 51, 0.25);
+}
+
+.itemImage {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(248, 178, 41, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.itemName {
+  color: #a61b1e;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.itemPrice {
+  color: #f8b229;
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+
+.removeBtn {
+  color: #999;
+  transition: color 0.3s ease;
+}
+
+.removeBtn:hover {
+  color: #d42426;
+}
+
+.summaryCard {
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%);
+  border: 3px double #d42426;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 12px 32px rgba(212, 36, 38, 0.15);
+  position: sticky;
+  top: 100px;
+}
+
+.summaryTitle {
+  color: #165b33;
+  font-weight: 800;
+  font-size: 1.4rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  border-bottom: 2px solid #d42426;
+  padding-bottom: 1rem;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.summaryTotal {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #d42426;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #d42426;
+}
+
+.summaryTotal::after {
+  content: '🎁';
+  margin-left: 0.5rem;
+}
+
+.checkoutBtn {
+  width: 100%;
+  background: #165b33 !important;
+  border: 2px solid #f8b229 !important;
+  color: white !important;
+  font-weight: 700 !important;
+  font-size: 1.1rem !important;
+  padding: 1rem !important;
+  border-radius: 12px !important;
+  text-transform: uppercase;
+  box-shadow: 0 8px 24px rgba(22, 91, 51, 0.35);
+  transition: all 0.3s ease;
+  margin-top: 1.5rem;
+}
+
+.checkoutBtn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(248, 178, 41, 0.45);
+  background: #0f4525 !important;
+}
+
+.promoAlert {
+  background: rgba(248, 178, 41, 0.15);
+  border: 2px solid #f8b229;
+  border-radius: 12px;
+  color: #a61b1e;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.emptyCart {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  border: 2px dashed #d42426;
+}
+
+.emptyIcon {
+  font-size: 5rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.4;
+}
+
+.emptyText {
+  color: #666;
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.emptyButton {
+  background: linear-gradient(135deg, #d42426 0%, #a61b1e 100%) !important;
+  border: 2px solid #f8b229 !important;
+  color: white !important;
+  font-weight: 700 !important;
+  padding: 0.9rem 2.5rem !important;
+  border-radius: 50px !important;
+  box-shadow: 0 8px 24px rgba(212, 36, 38, 0.3);
+  transition: all 0.3s ease;
+}
+
+.emptyButton:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 12px 32px rgba(248, 178, 41, 0.4);
+}
+
+@media (max-width: 768px) {
+  .summaryCard {
+    position: static;
+    margin-top: 2rem;
+  }
+}

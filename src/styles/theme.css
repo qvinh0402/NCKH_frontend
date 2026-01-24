@@ -1,0 +1,49 @@
+:root {
+  /* Brand palette */
+  --primary: #ff4d4f;
+  --primary-dark: #d32029;
+  --primary-light: #ff7875;
+  --secondary: #1890ff;
+  --accent-green: #16a34a;
+  --gold: #f8b229;
+
+  /* Neutral surface + typography */
+  --dark: #0f172a;
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-600: #475569;
+  --gray-800: #1e293b;
+
+  /* Elevation + motion */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 50px -12px rgba(0, 0, 0, 0.25);
+  --radius: 12px;
+  --radius-lg: 16px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  --hero-video-overlay: rgba(15, 23, 42, 0.6);
+}
+
+body.theme-standard {
+  --primary: #ff4d4f;
+  --primary-dark: #d32029;
+  --primary-light: #ff7875;
+  --secondary: #1890ff;
+  --gold: #f8b229;
+  --hero-video-overlay: rgba(15, 23, 42, 0.6);
+}
+
+body.christmas-theme,
+body.theme-holiday {
+  --primary: #d42426;
+  --primary-dark: #a61b1e;
+  --primary-light: #e85f5a;
+  --secondary: #165b33;
+  --gold: #f8b229;
+  --hero-video-overlay: rgba(14, 44, 28, 0.7);
+  background: linear-gradient(135deg, rgba(212, 36, 38, 0.08), rgba(22, 91, 51, 0.08));
+}
