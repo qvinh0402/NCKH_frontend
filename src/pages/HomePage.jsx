@@ -5,6 +5,7 @@ import ProductCard from '../components/ui/ProductCard';
 import CategoryPill from '../components/ui/CategoryPill';
 import { assetUrl, fetchBestSellingFoods, fetchFeaturedFoods, fetchTypes, fetchBanners, fetchCombos, fetchGifts } from '../services/api';
 import styles from './HomePage.module.css';
+import ChatShortcut from '../components/ChatShortcut/ChatShortcut';
 
 const HERO_MESSAGES = [
   { headline: 'Giao hàng hỏa tốc trong 60 phút', sub: 'Express Delivery Within 60 Minutes' },
@@ -585,6 +586,17 @@ const HomePage = () => {
           </Row>
         </Container>
       </section>
+
+      <section className={styles.finalCTA}>
+        <Container className="text-center">
+          <h2 className="fw-bold mb-3">Cùng Tạo Nên Mùa Giáng Sinh Đáng Nhớ!</h2>
+          <p className="text-white-50 mb-4">Đặt bàn ngay hôm nay để nhận ưu đãi đặc biệt mùa lễ hội.</p>
+          <Button as={Link} to="/menu" variant="light" size="lg" style={{ color: '#c41e3a', fontWeight: 'bold', padding: '12px 35px' }}>Đặt Tiệc Ngay →</Button>
+        </Container>
+      </section>
+
+      {/* Chat shortcut floating component */}
+      <ChatShortcut />
     </>
   );
 };
