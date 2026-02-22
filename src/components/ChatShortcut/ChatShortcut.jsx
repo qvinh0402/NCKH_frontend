@@ -4,9 +4,20 @@ import styles from './ChatShortcut.module.css';
 export default function ChatShortcut() {
   const [open, setOpen] = useState(false);
   const [showBubble, setShowBubble] = useState(true);
-  const [messages, setMessages] = useState([{ from: 'bot', text: 'Em rất sẵn lòng hỗ trợ Anh/Chị 😊' }]);
+  const [bubbleText, setBubbleText] = useState('Xin chào Anh/Chị! Em là trợ lý AI của Secret Pizza 😊');
+  const [messages, setMessages] = useState([
+    { from: 'bot', text: 'Xin chào Anh/Chị! Em là trợ lý AI của Secret Pizza 😊' },
+    { from: 'bot', text: 'Em rất sẵn lòng hỗ trợ Anh/Chị' }
+  ]);
   const [text, setText] = useState('');
   const endRef = useRef(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBubbleText('Em rất sẵn lòng hỗ trợ Anh/Chị');
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, open]);
 
@@ -28,7 +39,7 @@ export default function ChatShortcut() {
       {showBubble && !open && (
         <div className={styles.miniBubble} onClick={() => { setOpen(true); setShowBubble(false); }}>
           <div className={styles.miniHeader}><strong>Secret Pizza</strong></div>
-          <div className={styles.miniText}>Em rất sẵn lòng hỗ trợ Anh/Chị 😊</div>
+          <div className={styles.miniText}>{bubbleText}</div>
           <button
             className={styles.bubbleClose}
             onClick={(e) => { e.stopPropagation(); setShowBubble(false); }}
@@ -60,6 +71,10 @@ export default function ChatShortcut() {
               aria-label="Gõ câu hỏi"
             />
             <button onClick={send} aria-label="Gửi">Gửi</button>
+          </div>
+
+          <div className={styles.disclaimer}>
+            Thông tin chỉ mang tính tham khảo, được tư vấn bởi Trí Tuệ Nhân Tạo
           </div>
         </div>
       )}
