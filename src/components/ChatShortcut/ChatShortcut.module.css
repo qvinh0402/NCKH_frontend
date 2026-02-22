@@ -54,21 +54,24 @@
 
 /* chat window */
 .chatWindow {
-  width: 320px;
-  height: 420px;
-  border-radius: 12px;
+  width: 380px;
+  height: 520px;
+  border-radius: 16px;
   overflow: hidden;
-  background: #fff;
-  box-shadow: 0 14px 36px rgba(0,0,0,0.2);
+  background: linear-gradient(135deg, #fff 0%, #fffbf0 100%);
+  box-shadow: 0 14px 36px rgba(196, 30, 58, 0.2), 0 0 30px rgba(255, 77, 79, 0.1);
   display: flex;
   flex-direction: column;
   margin-bottom: 10px;
+  border: 2px solid #ffebee;
+  position: relative;
 }
 .chatHeader {
-  background: #ff4d4f;
+  background: linear-gradient(135deg, #c41e3a 0%, #ff4d4f 100%);
   color: #fff;
-  padding: 10px 12px;
-  font-weight: 600;
+  padding: 14px 16px;
+  font-weight: 700;
+  font-size: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -76,52 +79,94 @@
 .headerClose { background: transparent; border: none; color: #fff; font-size: 18px; cursor: pointer; }
 
 .chatBody {
-  padding: 12px;
+  padding: 16px;
   flex: 1;
   overflow: auto;
-  background: #f7f9fb;
+  background: linear-gradient(180deg, #f7f9fb 0%, #fffbf0 100%);
+  position: relative;
+}
+
+.chatBody::before {
+  content: '❄️ ❄️ ❄️';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 12px;
+  opacity: 0.3;
+}
+
+.chatBody::after {
+  content: '🎁 🎄 🎅';
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  font-size: 12px;
+  opacity: 0.2;
 }
 .msgBot {
   max-width: 78%;
-  background: #fff;
-  padding: 8px 10px;
-  border-radius: 10px;
-  margin-bottom: 8px;
-  border: 1px solid #e9ecef;
+  background: linear-gradient(135deg, #fff 0%, #fff5e6 100%);
+  padding: 10px 12px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  border: 1.5px solid #ffe4e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 .msgUser {
   max-width: 78%;
-  background: #e6f4ff;
-  padding: 8px 10px;
-  border-radius: 10px;
-  margin-bottom: 8px;
+  background: linear-gradient(135deg, #e6f4ff 0%, #cce5ff 100%);
+  padding: 10px 12px;
+  border-radius: 12px;
+  margin-bottom: 10px;
   margin-left: auto;
+  border: 1.5px solid #b3d9ff;
+  box-shadow: 0 2px 8px rgba(0, 102, 255, 0.1);
 }
 
 .chatFooter {
-  padding: 8px;
+  padding: 12px;
   display: flex;
   gap: 8px;
-  border-top: 1px solid #eee;
+  border-top: 2px solid #ffebee;
+  background: linear-gradient(180deg, #fffbf0 0%, #fff5e6 100%);
 }
 .chatFooter input {
   flex: 1;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #ffe4e1;
+  background: #fff;
+  font-size: 14px;
 }
 .chatFooter button {
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
   border: none;
-  background: #ff4d4f;
+  background: linear-gradient(135deg, #ff4d4f 0%, #c41e3a 100%);
   color: #fff;
   cursor: pointer;
-  min-width: 64px;
+  min-width: 70px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(196, 30, 58, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.chatFooter button:hover {
+  transform: translateY(-2px);
+}
+
+.disclaimer {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #999;
+  text-align: center;
+  border-top: 1px solid #ffebee;
+  background: linear-gradient(180deg, #fff5e6 0%, #fff0e0 100%);
+  font-style: italic;
 }
 
 /* small responsive tweak */
 @media (max-width: 480px) {
-  .chatWindow { width: 92vw; right: 4vw; }
+  .chatWindow { width: 92vw; right: 4vw; height: 480px; }
   .miniBubble { width: 84vw; right: 4vw; }
 }
