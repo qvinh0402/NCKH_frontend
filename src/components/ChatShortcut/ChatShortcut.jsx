@@ -10,6 +10,7 @@ export default function ChatShortcut() {
     { from: 'bot', text: 'Em rất sẵn lòng hỗ trợ Anh/Chị' }
   ]);
   const [text, setText] = useState('');
+  const [loading, setLoading] = useState(false);
   const endRef = useRef(null);
 
   useEffect(() => {
@@ -21,17 +22,38 @@ export default function ChatShortcut() {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, open]);
 
-  const send = () => {
-    if (!text.trim()) return;
+  const send = async () => {
+    if (!text.trim() || loading) return;
     const q = text.trim();
     const userMsg = { from: 'user', text: q };
     setMessages(m => [...m, userMsg]);
     setText('');
+    setLoading(true);
 
-    // TODO: replace with real API call to backend/chat service
-    setTimeout(() => {
-      setMessages(m => [...m, { from: 'bot', text: `Demo trả lời: "${q}"` }]);
-    }, 600);
+    try {
+      // Call chatbot API endpoint
+      const response = await fetch('http://localhost:3001/api/chatbot/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: q,
+          userId: 'user123' // TODO: replace with actual userId from auth context
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const botReply = data.reply || data.message || data.response || 'Xin lỗi, em không hiểu. Vui lòng thử lại.';
+      setMessages(m => [...m, { from: 'bot', text: botReply }]);
+    } catch (error) {
+      console.error('Chatbot API error:', error);
+      setMessages(m => [...m, { from: 'bot', text: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.' }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,11 +88,14 @@ export default function ChatShortcut() {
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && send()}
+              onKeyDown={(e) => e.key === 'Enter' && !loading && send()}
               placeholder="Gõ câu hỏi..."
               aria-label="Gõ câu hỏi"
+              disabled={loading}
             />
-            <button onClick={send} aria-label="Gửi">Gửi</button>
+            <button onClick={send} disabled={loading} aria-label="Gửi">
+              {loading ? '...' : 'Gửi'}
+            </button>
           </div>
 
           <div className={styles.disclaimer}>
