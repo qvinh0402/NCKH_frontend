@@ -37,7 +37,7 @@ export default function ChatShortcut() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: q,
-          userId: 'user123' // TODO: replace with actual userId from auth context
+          userId: 'guest' // Use 'guest' for unauthenticated users
         })
       });
 
