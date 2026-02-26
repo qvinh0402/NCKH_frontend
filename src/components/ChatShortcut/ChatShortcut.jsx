@@ -4,10 +4,10 @@ import styles from './ChatShortcut.module.css';
 export default function ChatShortcut() {
   const [open, setOpen] = useState(false);
   const [showBubble, setShowBubble] = useState(true);
-  const [bubbleText, setBubbleText] = useState('Xin chào Anh/Chị! Em là trợ lý AI của Secret Pizza 😊');
+  const [bubbleText, setBubbleText] = useState('Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊');
   const [messages, setMessages] = useState([
-    { from: 'bot', text: 'Xin chào Anh/Chị! Em là trợ lý AI của Secret Pizza 😊' },
-    { from: 'bot', text: 'Em rất sẵn lòng hỗ trợ Anh/Chị' }
+    { from: 'bot', text: 'Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊' },
+    { from: 'bot', text: 'Tôi rất sẵn lòng hỗ trợ Bạn' }
   ]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,7 +15,7 @@ export default function ChatShortcut() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setBubbleText('Em rất sẵn lòng hỗ trợ Anh/Chị');
+      setBubbleText('Tôi rất sẵn lòng hỗ trợ Bạn');
     }, 10000);
     return () => clearTimeout(timer);
   }, []);
