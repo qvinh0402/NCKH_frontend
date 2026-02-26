@@ -5,6 +5,7 @@ import ProductCard from '../components/ui/ProductCard';
 import EmptyState from '../components/ui/EmptyState';
 import { fetchFoods, fetchTypes, fetchVariants } from '../services/api';
 import styles from './MenuPage.module.css';
+import ChatShortcut from '../components/ChatShortcut/ChatShortcut';
 
 const MenuPage = () => {
   const [loading, setLoading] = useState(true);
@@ -318,6 +319,7 @@ const MenuPage = () => {
           </>
         )}
       </Container>
+      <ChatShortcut />
     </section>
   );
 };

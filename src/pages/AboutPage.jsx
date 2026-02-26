@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Spinner, Button } from 'react-bootstrap';
 import { fetchBranches, fetchBestSellingFoods, assetUrl } from '../services/api';
 import ProductCard from '../components/ui/ProductCard';
+import ChatShortcut from '../components/ChatShortcut/ChatShortcut';
 import styles from './AboutPage.module.css';
 
 const GOONG_API_KEY = import.meta.env.VITE_MAP_KEY || 'msHvRH6pBTsFvRyZVMacg0YpKhq0VzUdTDaEERTH';
@@ -443,6 +444,7 @@ const AboutPage = () => {
             </>
           )}
         </Container>
+        <ChatShortcut />
       </section>
 
       {/* Testimonials */}

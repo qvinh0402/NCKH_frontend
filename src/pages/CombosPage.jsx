@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Spinner, Button } from 'react-bootstrap';
 import { fetchCombos, assetUrl } from '../services/api';
 import { Link } from 'react-router-dom';
 import styles from './CombosPage.module.css';
+import ChatShortcut from '../components/ChatShortcut/ChatShortcut';
 
 const CombosPage = () => {
   const [loading, setLoading] = useState(true);
@@ -107,6 +108,7 @@ const CombosPage = () => {
           <div className="text-center text-muted py-5">Chưa có combo nào đang mở bán.</div>
         )}
       </Container>
+      <ChatShortcut />
     </section>
   );
 };
