@@ -37,7 +37,7 @@ export default function ChatShortcut() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: q,
-          userId: 'guest' // Use 'guest' for unauthenticated users
+          userId: localStorage.getItem("chat_user") || "guest"
         })
       });
 
@@ -46,7 +46,13 @@ export default function ChatShortcut() {
       }
 
       const data = await response.json();
-      const botReply = data.reply || data.message || data.response || 'Xin lỗi, em không hiểu. Vui lòng thử lại.';
+      console.log("Chatbot response:", data);
+
+      const botReply =
+        data?.data?.reply ||
+        data?.reply ||
+        data?.message ||
+          'Xin lỗi, Mình không hiểu. Vui lòng thử lại.';   
       setMessages(m => [...m, { from: 'bot', text: botReply }]);
     } catch (error) {
       console.error('Chatbot API error:', error);
