@@ -170,3 +170,26 @@
   .chatWindow { width: 92vw; right: 4vw; height: 480px; }
   .miniBubble { width: 84vw; right: 4vw; }
 }
+
+.suggestionBox{
+  display:flex;
+  gap:8px;
+  padding:8px 10px;
+  overflow-x:auto;
+  flex-wrap:wrap;
+}
+
+.suggestionBtn{
+  background:#f1f5f9;
+  border:none;
+  padding:6px 12px;
+  border-radius:16px;
+  font-size:13px;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:all .2s;
+}
+
+.suggestionBtn:hover{
+  background:#e2e8f0;
+}
