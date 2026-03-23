@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import styles from './ChatShortcut.module.css';
 
 const defaultSuggestions = [
@@ -11,37 +11,81 @@ const defaultSuggestions = [
   'Hướng dẫn đánh giá đơn hàng'
 ];
 
-export default function ChatShortcut() {
+// ============================================
+// CACHE UTILITIES - 24h TTL
+// ============================================
+const CACHE_KEY = 'chat_cache';
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
-const rawUserId = localStorage.getItem("chat_user");
-const isLoggedIn =
-  rawUserId &&
-  rawUserId !== "guest" &&
-  rawUserId !== "null" &&
-  rawUserId !== "undefined";
+const getCache = () => {
+  try {
+    const cache = localStorage.getItem(CACHE_KEY);
+    if (!cache) return null;
+
+    const parsed = JSON.parse(cache);
+    if (Date.now() > parsed.expiry) {
+      localStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+    return parsed.data;
+  } catch {
+    localStorage.removeItem(CACHE_KEY);
+    return null;
+  }
+};
+
+const setCache = (data) => {
+  try {
+    const payload = {
+      data,
+      expiry: Date.now() + CACHE_TTL
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+  } catch (err) {
+    console.error('[ChatCache] Save error:', err);
+  }
+};
+
+const clearCache = () => {
+  localStorage.removeItem(CACHE_KEY);
+};
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
+export default function ChatShortcut() {
+  // User authentication
+  const rawUserId = localStorage.getItem("chat_user");
+  const isLoggedIn =
+    rawUserId &&
+    rawUserId !== "guest" &&
+    rawUserId !== "null" &&
+    rawUserId !== "undefined";
   const userId = isLoggedIn ? rawUserId : "guest";
 
+  // UI States
   const [open, setOpen] = useState(false);
   const [showBubble, setShowBubble] = useState(true);
   const [bubbleText, setBubbleText] = useState('Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊');
 
+  // Chat States
   const [messages, setMessages] = useState([
     { from: 'bot', text: 'Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊' },
     { from: 'bot', text: 'Tôi rất sẵn lòng hỗ trợ Bạn' }
   ]);
-
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Suggestions
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [dynamicSuggestions, setDynamicSuggestions] = useState(defaultSuggestions);
 
   const endRef = useRef(null);
 
   // ============================================
-  // BUBBLE TEXT
+  // BUBBLE TEXT ROTATION
   // ============================================
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setBubbleText('Tôi rất sẵn lòng hỗ trợ Bạn');
@@ -51,74 +95,87 @@ const isLoggedIn =
   }, []);
 
   // ============================================
-  // LOAD CACHE (CHỈ KHI LOGIN)
+  // LOAD CACHE (CHỈ KHI LOGIN + CHƯA CÓ MESSAGES)
   // ============================================
-
-   useEffect(() => {
-   if (!isLoggedIn) return;
-
-    const cache = localStorage.getItem("chat_cache");
-
-    if (cache) {
-     try {
-       const parsed = JSON.parse(cache);
-
-       if (Date.now() > parsed.expiry) {
-         localStorage.removeItem("chat_cache");
-       } else {
-        setMessages(parsed.data);
-      }
-    } catch {
-      localStorage.removeItem("chat_cache");
-    }
-  }
-}, [isLoggedIn]);
-
-  // ============================================
-  // LOAD HISTORY SERVER (CHỈ LOGIN)
-  // ============================================
-
   useEffect(() => {
-    if (open && isLoggedIn) {
-      fetch(`http://localhost:3001/api/chatbot/history/${userId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.data.length > 0) {
-            setMessages(data.data);
-          }
-        })
-        .catch(err => console.error("Load history error:", err));
+    if (!isLoggedIn) return;
+
+    const cached = getCache();
+    if (cached && cached.length > 0) {
+      setMessages(cached);
     }
+  }, [isLoggedIn]);
+
+  // ============================================
+  // LOAD HISTORY FROM SERVER (CHỈ LOGIN)
+  // ============================================
+  useEffect(() => {
+    if (!open || !isLoggedIn) return;
+
+    const loadHistory = async () => {
+      setHistoryLoading(true);
+      try {
+        const res = await fetch(`http://localhost:3001/api/chatbot/history/${userId}`);
+        const data = await res.json();
+
+        if (data.success && data.data.length > 0) {
+          // Merge server history với cache nếu cần
+          setMessages(data.data);
+          // Cập nhật cache
+          setCache(data.data);
+        }
+      } catch (err) {
+        console.error("[ChatHistory] Load error:", err);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    loadHistory();
   }, [open, isLoggedIn, userId]);
 
   // ============================================
   // SAVE CACHE (CHỈ LOGIN)
   // ============================================
-
   useEffect(() => {
     if (isLoggedIn && messages.length > 0) {
-      const payload = {
-        data: messages,
-        expiry: Date.now() + 24 * 60 * 60 * 1000 // 24h
-      };
-      localStorage.setItem("chat_cache", JSON.stringify(payload));
+      setCache(messages);
     }
   }, [messages, isLoggedIn]);
 
   // ============================================
   // AUTO SCROLL
   // ============================================
-
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, open]);
 
   // ============================================
+  // REFRESH HISTORY (CHỈ LOGIN)
+  // ============================================
+  const refreshHistory = useCallback(async () => {
+    if (!isLoggedIn) return;
+
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`http://localhost:3001/api/chatbot/history/${userId}`);
+      const data = await res.json();
+
+      if (data.success) {
+        setMessages(data.data);
+        setCache(data.data);
+      }
+    } catch (err) {
+      console.error("[ChatHistory] Refresh error:", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [isLoggedIn, userId]);
+
+  // ============================================
   // SEND MESSAGE
   // ============================================
-
   const send = async (customText) => {
-
     const q = (customText || text).trim();
     if (!q || loading) return;
 
@@ -134,7 +191,6 @@ const isLoggedIn =
     setLoading(true);
 
     try {
-
       const response = await fetch('http://localhost:3001/api/chatbot/message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -167,64 +223,78 @@ const isLoggedIn =
       // ============================
       // Suggestions
       // ============================
-
-      const aiSuggestions =
-        data?.data?.suggestions ||
-        data?.suggestions;
+      const aiSuggestions = data?.data?.suggestions || data?.suggestions;
 
       if (aiSuggestions && Array.isArray(aiSuggestions)) {
         setDynamicSuggestions(aiSuggestions);
         setShowSuggestions(true);
-      }
-      else if (q.toLowerCase().includes("đơn")) {
+      } else if (q.toLowerCase().includes("đơn")) {
         setDynamicSuggestions([
           "Cách kiểm tra đơn hàng",
           "Hướng dẫn đánh giá đơn hàng"
         ]);
         setShowSuggestions(true);
-      }
-      else if (q.toLowerCase().includes("món")) {
+      } else if (q.toLowerCase().includes("món")) {
         setDynamicSuggestions([
           "Xem món đắt nhất",
           "Xem món rẻ nhất",
           "Xem món bán chạy"
         ]);
         setShowSuggestions(true);
-      }
-      else {
+      } else {
         setDynamicSuggestions(defaultSuggestions);
+        setShowSuggestions(true);
       }
 
     } catch (error) {
-
-      console.error('Chatbot API error:', error);
+      console.error('[Chatbot] API error:', error);
 
       setMessages(m => [
         ...m,
-        { from: 'bot', text: 'Xin lỗi, có lỗi xảy ra.', timestamp: new Date() }
+        { from: 'bot', text: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.', timestamp: new Date() }
       ]);
-
     } finally {
       setLoading(false);
     }
   };
 
   // ============================================
-  // CLEAR CHAT
+  // CLEAR CHAT - Xóa cả local và server (nếu login)
   // ============================================
+  const clearChat = async () => {
+    // Reset về messages mặc định
+    const defaultMessages = [
+      { from: 'bot', text: 'Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊' },
+      { from: 'bot', text: 'Tôi rất sẵn lòng hỗ trợ Bạn' }
+    ];
+    setMessages(defaultMessages);
+    setShowSuggestions(true);
 
-  const clearChat = () => {
-    setMessages([]);
+    // Xóa cache local
+    clearCache();
 
+    // Nếu đã đăng nhập, xóa cả trên server
     if (isLoggedIn) {
-      localStorage.removeItem("chat_cache");
+      try {
+        const res = await fetch(`http://localhost:3001/api/chatbot/history/${userId}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          console.log('[ChatHistory] Server history cleared');
+        } else {
+          console.warn('[ChatHistory] Clear server history failed:', data.message);
+        }
+      } catch (err) {
+        console.error('[ChatHistory] Clear error:', err);
+      }
     }
   };
 
   // ============================================
-  // UI
+  // RENDER
   // ============================================
-
   return (
     <div className={styles.wrapper}>
 
@@ -259,11 +329,27 @@ const isLoggedIn =
       {open && (
         <div className={styles.chatWindow}>
 
+          {/* HEADER */}
           <div className={styles.chatHeader}>
-            Hỗ trợ khách hàng
+            <span>Hỗ trợ khách hàng</span>
 
-            <div>
-              <button onClick={clearChat} style={{ marginRight: 8 }}>
+            <div className={styles.headerActions}>
+              {isLoggedIn && (
+                <button
+                  onClick={refreshHistory}
+                  disabled={historyLoading}
+                  title="Làm mới lịch sử"
+                  className={styles.iconBtn}
+                >
+                  {historyLoading ? '⏳' : '🔄'}
+                </button>
+              )}
+
+              <button
+                onClick={clearChat}
+                title="Xóa cuộc trò chuyện"
+                className={styles.iconBtn}
+              >
                 🗑
               </button>
 
@@ -278,19 +364,30 @@ const isLoggedIn =
 
           {/* NOTICE GUEST */}
           {!isLoggedIn && (
-            <div style={{ fontSize: 12, color: '#999', padding: 6 }}>
+            <div className={styles.guestNotice}>
               ⚠️ Bạn đang chat với tư cách khách (không lưu lịch sử)
             </div>
           )}
 
+          {/* LOGIN NOTICE */}
+          {isLoggedIn && (
+            <div className={styles.loginNotice}>
+              ✓ Đã đăng nhập - Lịch sử được lưu 24h
+            </div>
+          )}
+
+          {/* CHAT BODY */}
           <div className={styles.chatBody}>
+            {historyLoading && (
+              <div className={styles.loadingIndicator}>
+                Đang tải lịch sử...
+              </div>
+            )}
 
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={m.from === 'user'
-                  ? styles.msgUser
-                  : styles.msgBot}
+                className={m.from === 'user' ? styles.msgUser : styles.msgBot}
               >
                 {m.text}
               </div>
@@ -298,15 +395,15 @@ const isLoggedIn =
 
             {loading && (
               <div className={styles.msgBot}>
-                Đang trả lời...
+                <span className={styles.typing}>Đang trả lờ</span>
+                <span className={styles.dots}>...</span>
               </div>
             )}
 
             <div ref={endRef} />
-
           </div>
 
-          {/* Suggestions */}
+          {/* SUGGESTIONS */}
           {showSuggestions && (
             <div className={styles.suggestionBox}>
               {dynamicSuggestions.map((s, i) => (
@@ -322,8 +419,8 @@ const isLoggedIn =
             </div>
           )}
 
+          {/* FOOTER */}
           <div className={styles.chatFooter}>
-
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -335,9 +432,9 @@ const isLoggedIn =
             <button onClick={() => send()} disabled={loading}>
               {loading ? '...' : 'Gửi'}
             </button>
-
           </div>
 
+          {/* DISCLAIMER */}
           <div className={styles.disclaimer}>
             Thông tin chỉ mang tính tham khảo (AI)
           </div>
