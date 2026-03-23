@@ -13,6 +13,14 @@ const defaultSuggestions = [
 
 export default function ChatShortcut() {
 
+const rawUserId = localStorage.getItem("chat_user");
+const isLoggedIn =
+  rawUserId &&
+  rawUserId !== "guest" &&
+  rawUserId !== "null" &&
+  rawUserId !== "undefined";
+  const userId = isLoggedIn ? rawUserId : "guest";
+
   const [open, setOpen] = useState(false);
   const [showBubble, setShowBubble] = useState(true);
   const [bubbleText, setBubbleText] = useState('Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊');
@@ -30,6 +38,10 @@ export default function ChatShortcut() {
 
   const endRef = useRef(null);
 
+  // ============================================
+  // BUBBLE TEXT
+  // ============================================
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setBubbleText('Tôi rất sẵn lòng hỗ trợ Bạn');
@@ -38,16 +50,73 @@ export default function ChatShortcut() {
     return () => clearTimeout(timer);
   }, []);
 
+  // ============================================
+  // LOAD CACHE (CHỈ KHI LOGIN)
+  // ============================================
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const cache = localStorage.getItem("chat_cache");
+
+    if (cache) {
+      try {
+        setMessages(JSON.parse(cache));
+      } catch {
+        localStorage.removeItem("chat_cache");
+      }
+    }
+  }, [isLoggedIn]);
+
+  // ============================================
+  // LOAD HISTORY SERVER (CHỈ LOGIN)
+  // ============================================
+
+  useEffect(() => {
+    if (open && isLoggedIn) {
+      fetch(`http://localhost:3001/api/chatbot/history/${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data.length > 0) {
+            setMessages(data.data);
+          }
+        })
+        .catch(err => console.error("Load history error:", err));
+    }
+  }, [open, isLoggedIn, userId]);
+
+  // ============================================
+  // SAVE CACHE (CHỈ LOGIN)
+  // ============================================
+
+  useEffect(() => {
+    if (isLoggedIn && messages.length > 0) {
+      localStorage.setItem("chat_cache", JSON.stringify(messages));
+    }
+  }, [messages, isLoggedIn]);
+
+  // ============================================
+  // AUTO SCROLL
+  // ============================================
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, open]);
+
+  // ============================================
+  // SEND MESSAGE
+  // ============================================
 
   const send = async (customText) => {
 
     const q = (customText || text).trim();
     if (!q || loading) return;
 
-    const userMsg = { from: 'user', text: q };
+    const userMsg = {
+      from: 'user',
+      text: q,
+      timestamp: new Date()
+    };
 
     setMessages(m => [...m, userMsg]);
     setText('');
@@ -61,7 +130,7 @@ export default function ChatShortcut() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: q,
-          userId: localStorage.getItem("chat_user") || "guest"
+          userId: userId
         })
       });
 
@@ -77,85 +146,79 @@ export default function ChatShortcut() {
         data?.message ||
         'Xin lỗi, Mình không hiểu. Vui lòng thử lại.';
 
-      setMessages(m => [...m, { from: 'bot', text: botReply }]);
+      const botMsg = {
+        from: 'bot',
+        text: botReply,
+        timestamp: new Date()
+      };
 
-      /*
-        ============================
-        🤖 AI suggestions từ backend
-        ============================
-      */
+      setMessages(m => [...m, botMsg]);
+
+      // ============================
+      // Suggestions
+      // ============================
 
       const aiSuggestions =
         data?.data?.suggestions ||
         data?.suggestions;
 
       if (aiSuggestions && Array.isArray(aiSuggestions)) {
-
         setDynamicSuggestions(aiSuggestions);
         setShowSuggestions(true);
-
       }
-
-      /*
-        ============================
-        💬 Context suggestions
-        ============================
-      */
-
       else if (q.toLowerCase().includes("đơn")) {
-
         setDynamicSuggestions([
           "Cách kiểm tra đơn hàng",
           "Hướng dẫn đánh giá đơn hàng"
         ]);
-
         setShowSuggestions(true);
-
       }
-
       else if (q.toLowerCase().includes("món")) {
-
         setDynamicSuggestions([
           "Xem món đắt nhất",
           "Xem món rẻ nhất",
           "Xem món bán chạy"
         ]);
-
         setShowSuggestions(true);
-
       }
-
       else {
-
         setDynamicSuggestions(defaultSuggestions);
-
       }
 
-    }
-
-    catch (error) {
+    } catch (error) {
 
       console.error('Chatbot API error:', error);
 
       setMessages(m => [
         ...m,
-        { from: 'bot', text: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.' }
+        { from: 'bot', text: 'Xin lỗi, có lỗi xảy ra.', timestamp: new Date() }
       ]);
 
-    }
-
-    finally {
-
+    } finally {
       setLoading(false);
-
     }
-
   };
 
-  return (
+  // ============================================
+  // CLEAR CHAT
+  // ============================================
 
+  const clearChat = () => {
+    setMessages([]);
+
+    if (isLoggedIn) {
+      localStorage.removeItem("chat_cache");
+    }
+  };
+
+  // ============================================
+  // UI
+  // ============================================
+
+  return (
     <div className={styles.wrapper}>
 
+      {/* MINI BUBBLE */}
       {showBubble && !open && (
         <div
           className={styles.miniBubble}
@@ -176,29 +239,39 @@ export default function ChatShortcut() {
               e.stopPropagation();
               setShowBubble(false);
             }}
-            aria-label="Đóng"
           >
             ✕
           </button>
         </div>
       )}
 
+      {/* CHAT WINDOW */}
       {open && (
-
-        <div className={styles.chatWindow} role="dialog">
+        <div className={styles.chatWindow}>
 
           <div className={styles.chatHeader}>
-
             Hỗ trợ khách hàng
 
-            <button
-              className={styles.headerClose}
-              onClick={() => setOpen(false)}
-            >
-              ✕
-            </button>
+            <div>
+              <button onClick={clearChat} style={{ marginRight: 8 }}>
+                🗑
+              </button>
 
+              <button
+                className={styles.headerClose}
+                onClick={() => setOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
           </div>
+
+          {/* NOTICE GUEST */}
+          {!isLoggedIn && (
+            <div style={{ fontSize: 12, color: '#999', padding: 6 }}>
+              ⚠️ Bạn đang chat với tư cách khách (không lưu lịch sử)
+            </div>
+          )}
 
           <div className={styles.chatBody}>
 
@@ -213,16 +286,19 @@ export default function ChatShortcut() {
               </div>
             ))}
 
+            {loading && (
+              <div className={styles.msgBot}>
+                Đang trả lời...
+              </div>
+            )}
+
             <div ref={endRef} />
 
           </div>
 
-
           {/* Suggestions */}
-
           {showSuggestions && (
             <div className={styles.suggestionBox}>
-
               {dynamicSuggestions.map((s, i) => (
                 <button
                   key={i}
@@ -233,10 +309,8 @@ export default function ChatShortcut() {
                   {s}
                 </button>
               ))}
-
             </div>
           )}
-
 
           <div className={styles.chatFooter}>
 
@@ -248,23 +322,20 @@ export default function ChatShortcut() {
               disabled={loading}
             />
 
-            <button
-              onClick={() => send()}
-              disabled={loading}
-            >
+            <button onClick={() => send()} disabled={loading}>
               {loading ? '...' : 'Gửi'}
             </button>
 
           </div>
 
           <div className={styles.disclaimer}>
-            Thông tin chỉ mang tính tham khảo, được tư vấn bởi Trí Tuệ Nhân Tạo
+            Thông tin chỉ mang tính tham khảo (AI)
           </div>
 
         </div>
-
       )}
 
+      {/* FAB */}
       <button
         className={styles.fab}
         onClick={() => {
@@ -276,7 +347,5 @@ export default function ChatShortcut() {
       </button>
 
     </div>
-
   );
-
 }
