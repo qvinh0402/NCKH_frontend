@@ -54,19 +54,25 @@ const isLoggedIn =
   // LOAD CACHE (CHỈ KHI LOGIN)
   // ============================================
 
-  useEffect(() => {
-    if (!isLoggedIn) return;
+   useEffect(() => {
+   if (!isLoggedIn) return;
 
     const cache = localStorage.getItem("chat_cache");
 
     if (cache) {
-      try {
-        setMessages(JSON.parse(cache));
-      } catch {
-        localStorage.removeItem("chat_cache");
+     try {
+       const parsed = JSON.parse(cache);
+
+       if (Date.now() > parsed.expiry) {
+         localStorage.removeItem("chat_cache");
+       } else {
+        setMessages(parsed.data);
       }
+    } catch {
+      localStorage.removeItem("chat_cache");
     }
-  }, [isLoggedIn]);
+  }
+}, [isLoggedIn]);
 
   // ============================================
   // LOAD HISTORY SERVER (CHỈ LOGIN)
@@ -91,7 +97,11 @@ const isLoggedIn =
 
   useEffect(() => {
     if (isLoggedIn && messages.length > 0) {
-      localStorage.setItem("chat_cache", JSON.stringify(messages));
+      const payload = {
+        data: messages,
+        expiry: Date.now() + 24 * 60 * 60 * 1000 // 24h
+      };
+      localStorage.setItem("chat_cache", JSON.stringify(payload));
     }
   }, [messages, isLoggedIn]);
 
