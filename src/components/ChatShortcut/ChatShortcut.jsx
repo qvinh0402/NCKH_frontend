@@ -51,18 +51,36 @@ const clearCache = () => {
 };
 
 // ============================================
+// AUTH UTILITIES - Đồng bộ với hệ thống auth
+// ============================================
+const TOKEN_KEY = 'auth_token';
+const USER_KEY = 'auth_user';
+const CHAT_USER_KEY = 'chat_user';
+
+const getAuthInfo = () => {
+  try {
+    const token = localStorage.getItem(TOKEN_KEY);
+    const userStr = localStorage.getItem(USER_KEY);
+    const user = userStr ? JSON.parse(userStr) : null;
+    
+    return {
+      token,
+      user,
+      isLoggedIn: !!(token && user),
+      userId: user?.maTaiKhoan || null
+    };
+  } catch {
+    return { token: null, user: null, isLoggedIn: false, userId: null };
+  }
+};
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 export default function ChatShortcut() {
-  // User authentication
-  const rawUserId = localStorage.getItem("chat_user");
-  const isLoggedIn =
-    rawUserId &&
-    rawUserId !== "guest" &&
-    rawUserId !== "null" &&
-    rawUserId !== "undefined";
-  const userId = isLoggedIn ? rawUserId : "guest";
-
+  // Auth state - đồng bộ với hệ thống auth
+  const [authInfo, setAuthInfo] = useState(getAuthInfo());
+  
   // UI States
   const [open, setOpen] = useState(false);
   const [showBubble, setShowBubble] = useState(true);
@@ -82,6 +100,55 @@ export default function ChatShortcut() {
   const [dynamicSuggestions, setDynamicSuggestions] = useState(defaultSuggestions);
 
   const endRef = useRef(null);
+
+  // Destructure auth info
+  const { isLoggedIn, userId, token } = authInfo;
+
+  // ============================================
+  // Lắng nghe thay đổi auth từ localStorage
+  // ============================================
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === TOKEN_KEY || e.key === USER_KEY || e.key === CHAT_USER_KEY) {
+        const newAuthInfo = getAuthInfo();
+        setAuthInfo(newAuthInfo);
+        
+        // Nếu đăng xuất, reset messages về mặc định
+        if (!newAuthInfo.isLoggedIn) {
+          setMessages([
+            { from: 'bot', text: 'Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊' },
+            { from: 'bot', text: 'Tôi rất sẵn lòng hỗ trợ Bạn' }
+          ]);
+          clearCache();
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // ============================================
+  // Kiểm tra auth định kỳ (xử lý token hết hạn)
+  // ============================================
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const checkAuthInterval = setInterval(() => {
+      const currentAuth = getAuthInfo();
+      if (!currentAuth.isLoggedIn && authInfo.isLoggedIn) {
+        // User đã đăng xuất ở tab khác
+        setAuthInfo(currentAuth);
+        setMessages([
+          { from: 'bot', text: 'Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊' },
+          { from: 'bot', text: 'Tôi rất sẵn lòng hỗ trợ Bạn' }
+        ]);
+        clearCache();
+      }
+    }, 5000); // Check mỗi 5 giây
+
+    return () => clearInterval(checkAuthInterval);
+  }, [isLoggedIn, authInfo.isLoggedIn]);
 
   // ============================================
   // BUBBLE TEXT ROTATION
@@ -115,13 +182,20 @@ export default function ChatShortcut() {
     const loadHistory = async () => {
       setHistoryLoading(true);
       try {
-        const res = await fetch(`http://localhost:3001/api/chatbot/history/${userId}`);
+        const res = await fetch(`http://localhost:3001/api/chatbot/history/${userId}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        
+        if (res.status === 401) {
+          // Token hết hạn, đăng xuất
+          handleAuthExpired();
+          return;
+        }
+
         const data = await res.json();
 
         if (data.success && data.data.length > 0) {
-          // Merge server history với cache nếu cần
           setMessages(data.data);
-          // Cập nhật cache
           setCache(data.data);
         }
       } catch (err) {
@@ -132,7 +206,7 @@ export default function ChatShortcut() {
     };
 
     loadHistory();
-  }, [open, isLoggedIn, userId]);
+  }, [open, isLoggedIn, userId, token]);
 
   // ============================================
   // SAVE CACHE (CHỈ LOGIN)
@@ -151,6 +225,29 @@ export default function ChatShortcut() {
   }, [messages, open]);
 
   // ============================================
+  // Xử lý token hết hạn
+  // ============================================
+  const handleAuthExpired = useCallback(() => {
+    // Xóa auth data
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(CHAT_USER_KEY);
+    clearCache();
+    
+    setAuthInfo({ token: null, user: null, isLoggedIn: false, userId: null });
+    setMessages([
+      { from: 'bot', text: 'Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊' },
+      { from: 'bot', text: 'Tôi rất sẵn lòng hỗ trợ Bạn' }
+    ]);
+    
+    // Thông báo cho user
+    setMessages(m => [
+      ...m,
+      { from: 'bot', text: '⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để lưu lịch sử chat.', timestamp: new Date() }
+    ]);
+  }, []);
+
+  // ============================================
   // REFRESH HISTORY (CHỈ LOGIN)
   // ============================================
   const refreshHistory = useCallback(async () => {
@@ -158,7 +255,15 @@ export default function ChatShortcut() {
 
     setHistoryLoading(true);
     try {
-      const res = await fetch(`http://localhost:3001/api/chatbot/history/${userId}`);
+      const res = await fetch(`http://localhost:3001/api/chatbot/history/${userId}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+
+      if (res.status === 401) {
+        handleAuthExpired();
+        return;
+      }
+
       const data = await res.json();
 
       if (data.success) {
@@ -170,7 +275,7 @@ export default function ChatShortcut() {
     } finally {
       setHistoryLoading(false);
     }
-  }, [isLoggedIn, userId]);
+  }, [isLoggedIn, userId, token, handleAuthExpired]);
 
   // ============================================
   // SEND MESSAGE
@@ -191,14 +296,28 @@ export default function ChatShortcut() {
     setLoading(true);
 
     try {
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('http://localhost:3001/api/chatbot/message', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           message: q,
-          userId: userId
+          userId: userId || 'guest'
         })
       });
+
+      if (response.status === 401) {
+        handleAuthExpired();
+        setLoading(false);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
@@ -243,7 +362,6 @@ export default function ChatShortcut() {
         setShowSuggestions(true);
       } else {
         setDynamicSuggestions(defaultSuggestions);
-        setShowSuggestions(true);
       }
 
     } catch (error) {
@@ -274,11 +392,18 @@ export default function ChatShortcut() {
     clearCache();
 
     // Nếu đã đăng nhập, xóa cả trên server
-    if (isLoggedIn) {
+    if (isLoggedIn && token) {
       try {
         const res = await fetch(`http://localhost:3001/api/chatbot/history/${userId}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
         });
+
+        if (res.status === 401) {
+          handleAuthExpired();
+          return;
+        }
+
         const data = await res.json();
 
         if (data.success) {
@@ -372,7 +497,7 @@ export default function ChatShortcut() {
           {/* LOGIN NOTICE */}
           {isLoggedIn && (
             <div className={styles.loginNotice}>
-              ✓ Đã đăng nhập - Lịch sử được lưu 24h
+              ✓ Đã đăng nhập {authInfo.user?.hoTen ? `- ${authInfo.user.hoTen}` : ''} - Lịch sử được lưu 24h
             </div>
           )}
 
