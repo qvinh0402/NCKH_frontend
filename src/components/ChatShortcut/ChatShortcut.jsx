@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useAuth } from '../../contexts/AuthContext'; // ✅ Dùng AuthContext thay vì localStorage
 import styles from './ChatShortcut.module.css';
 
 const defaultSuggestions = [
@@ -51,35 +52,11 @@ const clearCache = () => {
 };
 
 // ============================================
-// AUTH UTILITIES - Đồng bộ với hệ thống auth
-// ============================================
-const TOKEN_KEY = 'auth_token';
-const USER_KEY = 'auth_user';
-const CHAT_USER_KEY = 'chat_user';
-
-const getAuthInfo = () => {
-  try {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const userStr = localStorage.getItem(USER_KEY);
-    const user = userStr ? JSON.parse(userStr) : null;
-    
-    return {
-      token,
-      user,
-      isLoggedIn: !!(token && user),
-      userId: user?.maTaiKhoan || null
-    };
-  } catch {
-    return { token: null, user: null, isLoggedIn: false, userId: null };
-  }
-};
-
-// ============================================
 // MAIN COMPONENT
 // ============================================
 export default function ChatShortcut() {
-  // Auth state - đồng bộ với hệ thống auth
-  const [authInfo, setAuthInfo] = useState(getAuthInfo());
+  // ✅ Dùng AuthContext - auto re-render khi đăng nhập/đăng xuất
+  const { isAuthenticated, user, token } = useAuth();
   
   // UI States
   const [open, setOpen] = useState(false);
@@ -101,54 +78,9 @@ export default function ChatShortcut() {
 
   const endRef = useRef(null);
 
-  // Destructure auth info
-  const { isLoggedIn, userId, token } = authInfo;
-
-  // ============================================
-  // Lắng nghe thay đổi auth từ localStorage
-  // ============================================
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === TOKEN_KEY || e.key === USER_KEY || e.key === CHAT_USER_KEY) {
-        const newAuthInfo = getAuthInfo();
-        setAuthInfo(newAuthInfo);
-        
-        // Nếu đăng xuất, reset messages về mặc định
-        if (!newAuthInfo.isLoggedIn) {
-          setMessages([
-            { from: 'bot', text: 'Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊' },
-            { from: 'bot', text: 'Tôi rất sẵn lòng hỗ trợ Bạn' }
-          ]);
-          clearCache();
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  // ============================================
-  // Kiểm tra auth định kỳ (xử lý token hết hạn)
-  // ============================================
-  useEffect(() => {
-    if (!isLoggedIn) return;
-
-    const checkAuthInterval = setInterval(() => {
-      const currentAuth = getAuthInfo();
-      if (!currentAuth.isLoggedIn && authInfo.isLoggedIn) {
-        // User đã đăng xuất ở tab khác
-        setAuthInfo(currentAuth);
-        setMessages([
-          { from: 'bot', text: 'Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊' },
-          { from: 'bot', text: 'Tôi rất sẵn lòng hỗ trợ Bạn' }
-        ]);
-        clearCache();
-      }
-    }, 5000); // Check mỗi 5 giây
-
-    return () => clearInterval(checkAuthInterval);
-  }, [isLoggedIn, authInfo.isLoggedIn]);
+  // ✅ Lấy từ AuthContext
+  const isLoggedIn = isAuthenticated;
+  const userId = user?.maTaiKhoan;
 
   // ============================================
   // BUBBLE TEXT ROTATION
@@ -228,17 +160,13 @@ export default function ChatShortcut() {
   // Xử lý token hết hạn
   // ============================================
   const handleAuthExpired = useCallback(() => {
-    // Xóa auth data
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    localStorage.removeItem(CHAT_USER_KEY);
-    clearCache();
-    
-    setAuthInfo({ token: null, user: null, isLoggedIn: false, userId: null });
+    // Không cần xóa localStorage ở đây vì AuthContext sẽ xử lý
+    // Chỉ reset messages
     setMessages([
       { from: 'bot', text: 'Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊' },
       { from: 'bot', text: 'Tôi rất sẵn lòng hỗ trợ Bạn' }
     ]);
+    clearCache();
     
     // Thông báo cho user
     setMessages(m => [
@@ -487,17 +415,10 @@ export default function ChatShortcut() {
             </div>
           </div>
 
-          {/* NOTICE GUEST */}
+          {/* ✅ CHỈ HIỆN CẢNH BÁO KHI CHƯA ĐĂNG NHẬP - Dùng useAuth */}
           {!isLoggedIn && (
             <div className={styles.guestNotice}>
               ⚠️ Bạn đang chat với tư cách khách (không lưu lịch sử)
-            </div>
-          )}
-
-          {/* LOGIN NOTICE */}
-          {isLoggedIn && (
-            <div className={styles.loginNotice}>
-              ✓ Đã đăng nhập {authInfo.user?.hoTen ? `- ${authInfo.user.hoTen}` : ''} - Lịch sử được lưu 24h
             </div>
           )}
 
