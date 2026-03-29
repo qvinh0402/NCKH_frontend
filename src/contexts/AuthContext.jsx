@@ -87,6 +87,13 @@ export function AuthProvider({ children }) {
         
         if (res.data?.user) {
           console.log('Auto-login SUCCESS, user:', res.data.user);
+          
+          // ✅ THÊM: Lưu token sau auto-login
+          if (res.data.token) {
+            localStorage.setItem('auth_token', res.data.token);
+            localStorage.setItem('auth_user', JSON.stringify(res.data.user));
+          }
+          
           dispatch({ type: 'INIT', payload: res.data.user });
         } else {
           // Login failed but KEEP credentials (might be temporary server error)
@@ -101,15 +108,20 @@ export function AuthProvider({ children }) {
     })();
   }, []); // Empty dependency - only run ONCE on mount
 
-  // Login function - only save credentials to localStorage
+  // Login function
   const login = async ({ email, matKhau }) => {
     try {
       const res = await api.post('/api/auth/login', { email, matKhau });
       const data = res.data;
       
       if (res.status === 200 && data && data.user) {
-        // ONLY save credentials (email + password), NOT user data
+        // ✅ THÊM: Lưu token và user vào localStorage
+        localStorage.setItem('auth_token', data.token);
+        localStorage.setItem('auth_user', JSON.stringify(data.user));
+        
+        // Lưu credentials cho auto-login
         localStorage.setItem('auth:credentials', JSON.stringify({ email, matKhau }));
+        
         dispatch({ type: 'LOGIN', payload: data.user });
         return { ok: true, user: data.user, message: data.message };
       }
@@ -121,15 +133,18 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Logout function
   const logout = () => {
-    // Clear credentials to prevent auto-login next time
+    // ✅ THÊM: Xóa token và user
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
     localStorage.removeItem('auth:credentials');
     localStorage.removeItem('cart');
     localStorage.removeItem('cart:compact');
     dispatch({ type: 'LOGOUT' });
   };
 
-  // Register via API. Payload should include at least { email, hoTen, matKhau } and optionally soDienThoai
+  // Register function
   const register = async ({ email, hoTen, matKhau, soDienThoai }) => {
     try {
       const res = await api.post('/api/auth/register', { email, hoTen, matKhau, soDienThoai });
@@ -137,6 +152,12 @@ export function AuthProvider({ children }) {
       
       // If backend returns a user object on register, save credentials and set auth
       if (res.status === 200 && data && data.user) {
+        // ✅ THÊM: Lưu token và user nếu có
+        if (data.token) {
+          localStorage.setItem('auth_token', data.token);
+          localStorage.setItem('auth_user', JSON.stringify(data.user));
+        }
+        
         localStorage.setItem('auth:credentials', JSON.stringify({ email, matKhau }));
         dispatch({ type: 'LOGIN', payload: data.user });
         return { ok: true, user: data.user, message: data.message };
@@ -153,11 +174,15 @@ export function AuthProvider({ children }) {
     dispatch({ type: 'UPDATE_USER', payload: updatedUserData });
   };
 
+  // ✅ THÊM: Lấy token từ localStorage để export
+  const token = localStorage.getItem('auth_token');
+
   return (
     <AuthContext.Provider value={{ 
       user: state.user, 
       isAuthenticated: state.isAuthenticated,
       loading: state.loading,
+      token, // ✅ THÊM: Export token
       login,
       logout,
       register,
