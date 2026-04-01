@@ -37,8 +37,8 @@ const CheckoutPage = () => {
   const [wards, setWards] = useState([]);
   const [locLoading, setLocLoading] = useState({ p: false, d: false, w: false });
   const ALLOWED_CITY_REGEX = useMemo(() => ({
-    HN: /Hà\s*Nội|Ha\s*Noi/i,
-    HCM: /Hồ\s*Chí\s*Minh|Ho\s*Chi\s*Minh|HCM/i
+    HN: /Hà\s*Nội|Ha\s*Noi|HN|Hanoi|Thành\s*phố\s*Hà\s*Nội/i,
+    HCM: /Hồ\s*Chí\s*Minh|Ho\s*Chi\s*Minh|HCM|TP\.?\s*HCM|TP\.?\s*Hồ\s*Chí\s*Minh|Thành\s*phố\s*Hồ\s*Chí\s*Minh/i
   }), []);
   const isAllowedCityName = (name = '') => ALLOWED_CITY_REGEX.HN.test(name) || ALLOWED_CITY_REGEX.HCM.test(name);
   
