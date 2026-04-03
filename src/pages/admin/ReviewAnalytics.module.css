@@ -3,25 +3,25 @@
 ========================= */
 .aiSummary {
   width: 100%;
-  min-height: 300px;
+  min-height: auto;
   max-height: none;
-  overflow-y: auto;
+  overflow-y: visible;
   overflow-x: hidden;
 
-  padding: 16px 18px;
+  padding: 16px 14px;
 
   font-size: 14px;
-  line-height: 1.8;
+  line-height: 1.65;
   color: #333;
 
   /* ✅ THÊM NỀN NHẸ */
-  background: #f8f9fa;
+  background: transparent;
 
   /* ✅ BORDER RÕ RÀNG */
   border: none;
 
   /* ✅ BO GÓC ĐẸP */
-  border-radius: 8px;
+  border-radius: 0;
 
   /* chống tràn chữ - cho phép xuống dòng tự nhiên */
   word-wrap: break-word;
@@ -32,17 +32,19 @@
   /* hiệu ứng mượt */
   transition: all 0.2s ease;
   box-sizing: border-box;
+  display: block;
 }
 
 /* =========================
    GLOBAL CONTENT (để chứa chữ)
 ========================= */
 .aiSummary * {
-  max-width: 100%;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  box-sizing: border-box;
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  box-sizing: border-box !important;
+  margin-top: 0 !important;
 }
 
 /* =========================
@@ -54,29 +56,39 @@
 .aiSummary h1,
 .aiSummary h5,
 .aiSummary h6 {
-  font-size: 15px;
-  font-weight: 600;
-  margin: 12px 0 8px;
-  color: #222;
-  word-break: break-word;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  margin: 0 0 8px 0 !important;
+  padding: 0 !important;
+  color: #222 !important;
+  word-break: break-word !important;
+  line-height: 1.5 !important;
 }
 
 /* =========================
-   PARAGRAPH
+   PARAGRAPH - CÓ MARGIN BOTTOM
 ========================= */
 .aiSummary p {
-  margin: 0 0 12px;
-  word-break: break-word;
-  line-height: 1.7;
+  margin: 0 0 10px 0 !important;
+  padding: 0 !important;
+  word-break: break-word !important;
+  line-height: 1.65 !important;
+  font-size: 14px !important;
+  color: #333 !important;
+}
+
+/* PARAGRAPH CUỐI CÙNG - BỎ MARGIN */
+.aiSummary p:last-child {
+  margin-bottom: 0 !important;
 }
 
 /* =========================
-   STRONG/BOLD
+   STRONG/BOLD - CÓ MÀU HIGHLIGHT
 ========================= */
 .aiSummary strong,
 .aiSummary b {
-  color: #d32f2f;
-  font-weight: 600;
+  color: inherit !important;
+  font-weight: 600 !important;
 }
 
 /* =========================
@@ -84,30 +96,40 @@
 ========================= */
 .aiSummary ul,
 .aiSummary ol {
-  padding-left: 20px;
-  margin: 8px 0 12px;
+  padding-left: 16px !important;
+  margin: 8px 0 10px 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 .aiSummary li {
-  margin-bottom: 8px;
-  line-height: 1.7;
-  word-break: break-word;
+  margin-bottom: 6px !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  line-height: 1.65 !important;
+  word-break: break-word !important;
+  font-size: 14px !important;
+  color: #333 !important;
+}
+
+.aiSummary li:last-child {
+  margin-bottom: 0 !important;
 }
 
 /* =========================
    SCROLLBAR (modern UI)
 ========================= */
 .aiSummary::-webkit-scrollbar {
-  width: 6px;
+  width: 0px;
 }
 
 .aiSummary::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: transparent;
   border-radius: 4px;
 }
 
 .aiSummary::-webkit-scrollbar-thumb:hover {
-  background: #999;
+  background: transparent;
 }
 
 /* =========================
@@ -131,12 +153,34 @@
 ========================= */
 @media (max-width: 768px) {
   .aiSummary {
-    max-height: 200px;
+    max-height: none;
+    min-height: auto;
     font-size: 13px;
-    padding: 10px 12px;
+    padding: 12px 10px;
+    line-height: 1.6;
   }
 
-  .aiSummary h4 {
-    font-size: 14px;
+  .aiSummary h4,
+  .aiSummary h3,
+  .aiSummary h2,
+  .aiSummary h1 {
+    font-size: 13px !important;
+    margin: 0 0 6px 0 !important;
+  }
+
+  .aiSummary p {
+    margin: 0 0 8px 0 !important;
+    font-size: 13px !important;
+  }
+
+  .aiSummary ul,
+  .aiSummary ol {
+    padding-left: 14px !important;
+    margin: 6px 0 8px 0 !important;
+  }
+
+  .aiSummary li {
+    margin-bottom: 4px !important;
+    font-size: 13px !important;
   }
 }

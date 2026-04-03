@@ -181,7 +181,6 @@ const ReviewAnalytics = ({ branchId }) => {
                 <div
                   className={styles.aiSummary}
                   dangerouslySetInnerHTML={{ __html: stats.aiSummary }}
-                  style={{ flex: 1 }}
                 />
               ) : (
                 <div className="text-center text-muted" style={{ padding: '40px 20px' }}>
