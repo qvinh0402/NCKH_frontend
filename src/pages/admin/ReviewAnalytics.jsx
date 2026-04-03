@@ -11,6 +11,7 @@ import {
   Cell
 } from 'recharts';
 import { api } from '../../services/api';
+import styles from './ReviewAnalytics.module.css';
 
 const ReviewAnalytics = ({ branchId }) => {
   const [stats, setStats] = useState(null);
@@ -166,7 +167,8 @@ const ReviewAnalytics = ({ branchId }) => {
 
         {/* RIGHT: AI SUMMARY */}
         <Col md={5}>
-          <Card className="h-100 shadow-sm border-0 bg-light">
+          {/* ✅ FIX: bỏ bg-light để không bị lồng nền */}
+          <Card className="h-100 shadow-sm border-0">
             <Card.Body>
               <Card.Title className="d-flex align-items-center gap-2">
                 🤖 Insight AI
@@ -176,22 +178,13 @@ const ReviewAnalytics = ({ branchId }) => {
               </Card.Title>
 
               {stats.aiSummary ? (
-                <div
-                  className="ai-summary-content"
-                  style={{
-                    maxHeight: 260,
-                    overflowY: 'auto',
-                    paddingRight: 6,
-                    fontSize: 14,
-                    lineHeight: 1.6,
-
-                    // ✅ FIX FULL TEXT (NO ...)
-                    whiteSpace: 'normal',
-                    wordBreak: 'break-word',
-                    overflowWrap: 'break-word'
-                  }}
-                  dangerouslySetInnerHTML={{ __html: stats.aiSummary }}
-                />
+                /* ✅ FIX: thêm wrapper spacing */
+                <div className="p-2">
+                  <div
+                    className={styles.aiSummary}
+                    dangerouslySetInnerHTML={{ __html: stats.aiSummary }}
+                  />
+                </div>
               ) : (
                 <div className="text-center text-muted py-5">
                   <p>
