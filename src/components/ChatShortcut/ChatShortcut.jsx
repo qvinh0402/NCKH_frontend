@@ -63,6 +63,7 @@ export default function ChatShortcut() {
   const [open, setOpen] = useState(false);
   const [showBubble, setShowBubble] = useState(true);
   const [bubbleText, setBubbleText] = useState('Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊');
+  const [showHistory, setShowHistory] = useState(false);
 
   // Chat States
   const [messages, setMessages] = useState([
@@ -74,6 +75,7 @@ export default function ChatShortcut() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [dynamicSuggestions, setDynamicSuggestions] = useState(defaultSuggestions);
+  const [oldConversations, setOldConversations] = useState([]);
 
   const endRef = useRef(null);
   const isLoggedIn = isAuthenticated;
@@ -299,6 +301,93 @@ export default function ChatShortcut() {
   };
 
   // ============================================
+  // LOAD OLD CONVERSATIONS (CHỈ LOGIN)
+  // ============================================
+  useEffect(() => {
+    if (!showHistory || !isLoggedIn) return;
+    
+    const loadOldConversations = async () => {
+      const currentToken = token || localStorage.getItem('auth_token');
+      
+      try {
+        const res = await fetch(`http://localhost:3001/api/chatbot/conversations/${userId}`, {
+          headers: currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {}
+        });
+        
+        if (res.status === 401) {
+          handleAuthExpired();
+          return;
+        }
+
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setOldConversations(data.data);
+        }
+      } catch (err) {
+        console.error("[ChatHistory] Load old conversations error:", err);
+      }
+    };
+
+    loadOldConversations();
+  }, [showHistory, isLoggedIn, userId, token, handleAuthExpired]);
+
+  // ============================================
+  // LOAD CONVERSATION DETAIL
+  // ============================================
+  const loadConversation = (conversationId) => {
+    const conv = oldConversations.find(c => c.id === conversationId);
+    if (conv && conv.messages) {
+      setMessages(conv.messages);
+      setShowHistory(false);
+    }
+  };
+
+  // ============================================
+  // DELETE CONVERSATION
+  // ============================================
+  const deleteConversation = async (conversationId) => {
+    if (!window.confirm('Xác nhận xóa cuộc trò chuyện này?')) return;
+
+    const currentToken = token || localStorage.getItem('auth_token');
+    
+    try {
+      const res = await fetch(`http://localhost:3001/api/chatbot/conversations/${conversationId}`, {
+        method: 'DELETE',
+        headers: currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {}
+      });
+
+      if (res.status === 401) {
+        handleAuthExpired();
+        return;
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        setOldConversations(old => old.filter(c => c.id !== conversationId));
+      }
+    } catch (err) {
+      console.error("[ChatHistory] Delete conversation error:", err);
+    }
+  };
+
+  // ============================================
+  // FORMAT TIME FOR DISPLAY
+  // ============================================
+  const formatTime = (timestamp) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hours === 0 && minutes === 0) return 'Vừa xong';
+    if (hours === 0) return `${minutes}p trước`;
+    if (hours < 24) return `${hours}h trước`;
+    return date.toLocaleDateString('vi-VN');
+  };
+
+  // ============================================
   // RENDER
   // ============================================
   return (
@@ -320,14 +409,54 @@ export default function ChatShortcut() {
             <span>Hỗ trợ khách hàng</span>
             <div className={styles.headerActions}>
               {isLoggedIn && (
-                <button onClick={refreshHistory} disabled={historyLoading} title="Làm mới lịch sử" className={styles.iconBtn}>
-                  {historyLoading ? '⏳' : '🔄'}
-                </button>
+                <>
+                  <button onClick={refreshHistory} disabled={historyLoading} title="Làm mới lịch sử" className={styles.iconBtn}>
+                    {historyLoading ? '⏳' : '🔄'}
+                  </button>
+                  <button onClick={() => setShowHistory(!showHistory)} title="Lịch sử cuộc trò chuyện" className={styles.iconBtn}>
+                    📋
+                  </button>
+                </>
               )}
               <button onClick={clearChat} title="Xóa cuộc trò chuyện" className={styles.iconBtn}>🗑</button>
               <button className={styles.headerClose} onClick={() => setOpen(false)}>✕</button>
             </div>
           </div>
+
+          {/* HISTORY PANEL */}
+          {showHistory && isLoggedIn && (
+            <div className={styles.historyPanel}>
+              <div className={styles.historyHeader}>
+                <h3>Lịch sử trò chuyện</h3>
+                <button onClick={() => setShowHistory(false)} className={styles.historyClose}>✕</button>
+              </div>
+              <div className={styles.historyList}>
+                {oldConversations.length === 0 ? (
+                  <div className={styles.noHistory}>Không có cuộc trò chuyện nào</div>
+                ) : (
+                  oldConversations.map(conv => (
+                    <div key={conv.id} className={styles.historyItem}>
+                      <div className={styles.historyItemContent} onClick={() => loadConversation(conv.id)}>
+                        <div className={styles.historyItemPreview}>
+                          {conv.preview || 'Cuộc trò chuyện'}
+                        </div>
+                        <div className={styles.historyItemTime}>
+                          {formatTime(conv.timestamp)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => deleteConversation(conv.id)}
+                        className={styles.historyItemDelete}
+                        title="Xóa"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
 
           {/* ✅ CHỈ HIỆN KHI CHƯA ĐĂNG NHẬP */}
           {!isLoggedIn && (
