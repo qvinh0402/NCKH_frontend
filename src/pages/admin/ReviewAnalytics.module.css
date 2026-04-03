@@ -2,60 +2,96 @@
    AI SUMMARY CONTAINER
 ========================= */
 .aiSummary {
-  max-height: 260px;
+  width: 100%;
+  min-height: 300px;
+  max-height: none;
   overflow-y: auto;
+  overflow-x: hidden;
 
-  padding: 14px 16px;
+  padding: 16px 18px;
 
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.8;
   color: #333;
 
   /* ✅ THÊM NỀN NHẸ */
   background: #f8f9fa;
 
   /* ✅ BORDER RÕ RÀNG */
-  border: 1px solid #e5e7eb;
+  border: none;
 
   /* ✅ BO GÓC ĐẸP */
-  border-radius: 10px;
+  border-radius: 8px;
 
-  /* chống tràn chữ */
+  /* chống tràn chữ - cho phép xuống dòng tự nhiên */
+  word-wrap: break-word;
   word-break: break-word;
-  overflow-wrap: anywhere;
+  white-space: normal;
+  overflow-wrap: break-word;
 
   /* hiệu ứng mượt */
   transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+/* =========================
+   GLOBAL CONTENT (để chứa chữ)
+========================= */
+.aiSummary * {
+  max-width: 100%;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
 }
 
 /* =========================
    HEADING
 ========================= */
-.aiSummary h4 {
+.aiSummary h4,
+.aiSummary h3,
+.aiSummary h2,
+.aiSummary h1,
+.aiSummary h5,
+.aiSummary h6 {
   font-size: 15px;
   font-weight: 600;
-  margin: 10px 0 6px;
+  margin: 12px 0 8px;
   color: #222;
+  word-break: break-word;
 }
 
 /* =========================
    PARAGRAPH
 ========================= */
 .aiSummary p {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
+  word-break: break-word;
+  line-height: 1.7;
+}
+
+/* =========================
+   STRONG/BOLD
+========================= */
+.aiSummary strong,
+.aiSummary b {
+  color: #d32f2f;
+  font-weight: 600;
 }
 
 /* =========================
    LIST
 ========================= */
-.aiSummary ul {
-  padding-left: 18px;
-  margin: 0;
+.aiSummary ul,
+.aiSummary ol {
+  padding-left: 20px;
+  margin: 8px 0 12px;
 }
 
 .aiSummary li {
-  margin-bottom: 6px;
-  line-height: 1.5;
+  margin-bottom: 8px;
+  line-height: 1.7;
+  word-break: break-word;
 }
 
 /* =========================

@@ -114,14 +114,14 @@ const ReviewAnalytics = ({ branchId }) => {
         </div>
       </div>
 
-      <Row>
+      <Row className="g-3">
         {/* LEFT: CHART */}
-        <Col md={7}>
-          <Card className="h-100 shadow-sm">
-            <Card.Body>
+        <Col lg={7}>
+          <Card className="shadow-sm h-100">
+            <Card.Body className="d-flex flex-column">
               <Card.Title>Chi tiết vấn đề</Card.Title>
 
-              <div style={{ height: 300 }}>
+              <div style={{ height: 300, flex: 1, minHeight: 300 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={chartData}
@@ -166,27 +166,25 @@ const ReviewAnalytics = ({ branchId }) => {
         </Col>
 
         {/* RIGHT: AI SUMMARY */}
-        <Col md={5}>
-          {/* ✅ FIX: bỏ bg-light để không bị lồng nền */}
-          <Card className="h-100 shadow-sm border-0">
-            <Card.Body>
-              <Card.Title className="d-flex align-items-center gap-2">
-                🤖 Insight AI
+        <Col lg={5}>
+          <Card className="shadow-sm border-0 h-100">
+            <Card.Body className="d-flex flex-column p-3" style={{ gap: '12px' }}>
+              <div className="d-flex align-items-center gap-2">
+                <span style={{ fontSize: 20 }}>🤖</span>
+                <span style={{ fontWeight: 600, fontSize: 15 }}>Insight AI</span>
                 {analyzing && (
                   <Spinner animation="grow" size="sm" variant="primary" />
                 )}
-              </Card.Title>
+              </div>
 
               {stats.aiSummary ? (
-                /* ✅ FIX: thêm wrapper spacing */
-                <div className="p-2">
-                  <div
-                    className={styles.aiSummary}
-                    dangerouslySetInnerHTML={{ __html: stats.aiSummary }}
-                  />
-                </div>
+                <div
+                  className={styles.aiSummary}
+                  dangerouslySetInnerHTML={{ __html: stats.aiSummary }}
+                  style={{ flex: 1 }}
+                />
               ) : (
-                <div className="text-center text-muted py-5">
+                <div className="text-center text-muted" style={{ padding: '40px 20px' }}>
                   <p>
                     Nhấn <b>"Phân tích AI"</b> để tạo insight ngắn gọn từ đánh giá.
                   </p>
