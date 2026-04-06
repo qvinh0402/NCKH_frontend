@@ -343,13 +343,16 @@ const AdminTableCard = ({
     return `${baseClass} ${variantClass} ${animationClass} ${clickableClass}`.trim();
   }, [variant, animate, onClick]);
 
+  // Build attributes object only with defined values
+  const divProps = {
+    className: cardClassName,
+    ...(onClick && { onClick }),
+    ...(onClick && { role: 'button' }),
+    ...(onClick && { tabIndex: 0 })
+  };
+
   return (
-    <div 
-      className={cardClassName}
-      onClick={onClick}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-    >
+    <div {...divProps}>
       {headerSection}
       {bodySection}
       {footerSection}

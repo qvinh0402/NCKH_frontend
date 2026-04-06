@@ -464,7 +464,7 @@ const AdminSidebar = () => {
       </aside>
       
       {/* Add custom styles for active states */}
-      <style jsx>{`
+      <style>{`
         .admin-nav-link--active .admin-nav-indicator {
           opacity: 1 !important;
         }
