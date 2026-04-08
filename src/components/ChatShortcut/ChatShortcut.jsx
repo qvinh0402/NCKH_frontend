@@ -63,7 +63,6 @@ export default function ChatShortcut() {
   const [open, setOpen] = useState(false);
   const [showBubble, setShowBubble] = useState(true);
   const [bubbleText, setBubbleText] = useState('Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊');
-  const [showHistory, setShowHistory] = useState(false);
 
   // Chat States
   const [messages, setMessages] = useState([
@@ -75,11 +74,10 @@ export default function ChatShortcut() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [dynamicSuggestions, setDynamicSuggestions] = useState(defaultSuggestions);
-  const [oldConversations, setOldConversations] = useState([]);
 
   const endRef = useRef(null);
   const isLoggedIn = isAuthenticated;
-  const userId = user?.maTaiKhoan;
+  const userId = user?.maTaiKhoan || 'guest';
 
   // ============================================
   // BUBBLE TEXT ROTATION
@@ -92,24 +90,22 @@ export default function ChatShortcut() {
   }, []);
 
   // ============================================
-  // LOAD CACHE (CHỈ KHI LOGIN)
+  // LOAD CACHE (24H TTL - CHO TẤT CẢ USER)
   // ============================================
   useEffect(() => {
-    if (!isLoggedIn) return;
     const cached = getCache();
     if (cached && cached.length > 0) {
       setMessages(cached);
     }
-  }, [isLoggedIn]);
+  }, []);
 
   // ============================================
-  // LOAD HISTORY FROM SERVER (CHỈ LOGIN)
+  // LOAD HISTORY FROM SERVER (CHO TẤT CẢ USER)
   // ============================================
   useEffect(() => {
-    if (!open || !isLoggedIn) return;
+    if (!open) return;
 
     const loadHistory = async () => {
-      // ✅ FIX: Lấy token mới nhất từ localStorage
       const currentToken = token || localStorage.getItem('auth_token');
       
       console.log('[ChatHistory] Loading with token:', currentToken ? 'Có' : 'Không');
@@ -138,16 +134,16 @@ export default function ChatShortcut() {
     };
 
     loadHistory();
-  }, [open, isLoggedIn, userId, token]);
+  }, [open, userId, token]);
 
   // ============================================
-  // SAVE CACHE (CHỈ LOGIN)
+  // SAVE CACHE (24H TTL - CHO TẤT CẢ USER)
   // ============================================
   useEffect(() => {
-    if (isLoggedIn && messages.length > 0) {
+    if (messages.length > 0) {
       setCache(messages);
     }
-  }, [messages, isLoggedIn]);
+  }, [messages]);
 
   // ============================================
   // AUTO SCROLL
@@ -165,18 +161,13 @@ export default function ChatShortcut() {
       { from: 'bot', text: 'Tôi rất sẵn lòng hỗ trợ Bạn' }
     ]);
     clearCache();
-    setMessages(m => [
-      ...m,
-      { from: 'bot', text: '⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để lưu lịch sử chat.', timestamp: new Date() }
-    ]);
+
   }, []);
 
   // ============================================
-  // REFRESH HISTORY (CHỈ LOGIN)
+  // REFRESH HISTORY (CHO TẤT CẢ USER)
   // ============================================
   const refreshHistory = useCallback(async () => {
-    if (!isLoggedIn) return;
-    
     // ✅ FIX: Lấy token mới nhất
     const currentToken = token || localStorage.getItem('auth_token');
 
@@ -201,7 +192,7 @@ export default function ChatShortcut() {
     } finally {
       setHistoryLoading(false);
     }
-  }, [isLoggedIn, userId, token, handleAuthExpired]);
+  }, [userId, token, handleAuthExpired]);
 
   // ============================================
   // SEND MESSAGE
@@ -267,110 +258,6 @@ export default function ChatShortcut() {
   };
 
   // ============================================
-  // CLEAR CHAT
-  // ============================================
-  const clearChat = async () => {
-    const defaultMessages = [
-      { from: 'bot', text: 'Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊' },
-      { from: 'bot', text: 'Tôi rất sẵn lòng hỗ trợ Bạn' }
-    ];
-    setMessages(defaultMessages);
-    setShowSuggestions(true);
-    clearCache();
-
-    if (isLoggedIn) {
-      // ✅ FIX: Lấy token mới nhất
-      const currentToken = token || localStorage.getItem('auth_token');
-      
-      try {
-        const res = await fetch(`http://localhost:3001/api/chatbot/history/${userId}`, {
-          method: 'DELETE',
-          headers: currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {}
-        });
-
-        if (res.status === 401) {
-          handleAuthExpired();
-          return;
-        }
-        const data = await res.json();
-        if (data.success) console.log('[ChatHistory] Server history cleared');
-      } catch (err) {
-        console.error('[ChatHistory] Clear error:', err);
-      }
-    }
-  };
-
-  // ============================================
-  // LOAD OLD CONVERSATIONS (CHỈ LOGIN)
-  // ============================================
-  useEffect(() => {
-    if (!showHistory || !isLoggedIn) return;
-    
-    const loadOldConversations = async () => {
-      const currentToken = token || localStorage.getItem('auth_token');
-      
-      try {
-        const res = await fetch(`http://localhost:3001/api/chatbot/conversations/${userId}`, {
-          headers: currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {}
-        });
-        
-        if (res.status === 401) {
-          handleAuthExpired();
-          return;
-        }
-
-        const data = await res.json();
-        if (data.success && Array.isArray(data.data)) {
-          setOldConversations(data.data);
-        }
-      } catch (err) {
-        console.error("[ChatHistory] Load old conversations error:", err);
-      }
-    };
-
-    loadOldConversations();
-  }, [showHistory, isLoggedIn, userId, token, handleAuthExpired]);
-
-  // ============================================
-  // LOAD CONVERSATION DETAIL
-  // ============================================
-  const loadConversation = (conversationId) => {
-    const conv = oldConversations.find(c => c.id === conversationId);
-    if (conv && conv.messages) {
-      setMessages(conv.messages);
-      setShowHistory(false);
-    }
-  };
-
-  // ============================================
-  // DELETE CONVERSATION
-  // ============================================
-  const deleteConversation = async (conversationId) => {
-    if (!window.confirm('Xác nhận xóa cuộc trò chuyện này?')) return;
-
-    const currentToken = token || localStorage.getItem('auth_token');
-    
-    try {
-      const res = await fetch(`http://localhost:3001/api/chatbot/conversations/${conversationId}`, {
-        method: 'DELETE',
-        headers: currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {}
-      });
-
-      if (res.status === 401) {
-        handleAuthExpired();
-        return;
-      }
-
-      const data = await res.json();
-      if (data.success) {
-        setOldConversations(old => old.filter(c => c.id !== conversationId));
-      }
-    } catch (err) {
-      console.error("[ChatHistory] Delete conversation error:", err);
-    }
-  };
-
-  // ============================================
   // FORMAT TIME FOR DISPLAY
   // ============================================
   const formatTime = (timestamp) => {
@@ -408,66 +295,12 @@ export default function ChatShortcut() {
           <div className={styles.chatHeader}>
             <span>Hỗ trợ khách hàng</span>
             <div className={styles.headerActions}>
-              {isLoggedIn && (
-                <>
-                  <button onClick={refreshHistory} disabled={historyLoading} title="Làm mới lịch sử" className={styles.iconBtn}>
-                    {historyLoading ? '⏳' : '🔄'}
-                  </button>
-                  <button onClick={() => setShowHistory(!showHistory)} title="Lịch sử cuộc trò chuyện" className={styles.iconBtn}>
-                    📋
-                  </button>
-                </>
-              )}
-              <button onClick={clearChat} title="Xóa cuộc trò chuyện" className={styles.iconBtn}>🗑</button>
               <button className={styles.headerClose} onClick={() => setOpen(false)}>✕</button>
             </div>
           </div>
 
-          {/* HISTORY PANEL */}
-          {showHistory && isLoggedIn && (
-            <div className={styles.historyPanel}>
-              <div className={styles.historyHeader}>
-                <h3>Lịch sử trò chuyện</h3>
-                <button onClick={() => setShowHistory(false)} className={styles.historyClose}>✕</button>
-              </div>
-              <div className={styles.historyList}>
-                {oldConversations.length === 0 ? (
-                  <div className={styles.noHistory}>Không có cuộc trò chuyện nào</div>
-                ) : (
-                  oldConversations.map(conv => (
-                    <div key={conv.id} className={styles.historyItem}>
-                      <div className={styles.historyItemContent} onClick={() => loadConversation(conv.id)}>
-                        <div className={styles.historyItemPreview}>
-                          {conv.preview || 'Cuộc trò chuyện'}
-                        </div>
-                        <div className={styles.historyItemTime}>
-                          {formatTime(conv.timestamp)}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => deleteConversation(conv.id)}
-                        className={styles.historyItemDelete}
-                        title="Xóa"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ✅ CHỈ HIỆN KHI CHƯA ĐĂNG NHẬP */}
-          {!isLoggedIn && (
-            <div className={styles.guestNotice}>
-              ⚠️ Bạn đang chat với tư cách khách (không lưu lịch sử)
-            </div>
-          )}
-
           {/* CHAT BODY */}
           <div className={styles.chatBody}>
-            {historyLoading && <div className={styles.loadingIndicator}>Đang tải lịch sử...</div>}
             {messages.map((m, i) => (
               <div key={i} className={m.from === 'user' ? styles.msgUser : styles.msgBot}>{m.text}</div>
             ))}
