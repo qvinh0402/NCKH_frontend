@@ -9,7 +9,8 @@ const defaultSuggestions = [
   'Hướng dẫn đặt hàng',
   'Cách kiểm tra đơn hàng',
   'Hướng dẫn đánh giá món',
-  'Hướng dẫn đánh giá đơn hàng'
+  'Hướng dẫn đánh giá đơn hàng',
+  'Thông tin chi nhánh'
 ];
 
 // ============================================
@@ -71,12 +72,10 @@ export default function ChatShortcut() {
   ]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [dynamicSuggestions, setDynamicSuggestions] = useState(defaultSuggestions);
 
   const endRef = useRef(null);
-  const isLoggedIn = isAuthenticated;
   const userId = user?.maTaiKhoan || 'guest';
 
   // ============================================
@@ -98,43 +97,6 @@ export default function ChatShortcut() {
       setMessages(cached);
     }
   }, []);
-
-  // ============================================
-  // LOAD HISTORY FROM SERVER (CHO TẤT CẢ USER)
-  // ============================================
-  useEffect(() => {
-    if (!open) return;
-
-    const loadHistory = async () => {
-      const currentToken = token || localStorage.getItem('auth_token');
-      
-      console.log('[ChatHistory] Loading with token:', currentToken ? 'Có' : 'Không');
-      
-      setHistoryLoading(true);
-      try {
-        const res = await fetch(`http://localhost:3001/api/chatbot/history/${userId}`, {
-          headers: currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {}
-        });
-        
-        if (res.status === 401) {
-          handleAuthExpired();
-          return;
-        }
-
-        const data = await res.json();
-        if (data.success && data.data.length > 0) {
-          setMessages(data.data);
-          setCache(data.data);
-        }
-      } catch (err) {
-        console.error("[ChatHistory] Load error:", err);
-      } finally {
-        setHistoryLoading(false);
-      }
-    };
-
-    loadHistory();
-  }, [open, userId, token]);
 
   // ============================================
   // SAVE CACHE (24H TTL - CHO TẤT CẢ USER)
@@ -163,36 +125,6 @@ export default function ChatShortcut() {
     clearCache();
 
   }, []);
-
-  // ============================================
-  // REFRESH HISTORY (CHO TẤT CẢ USER)
-  // ============================================
-  const refreshHistory = useCallback(async () => {
-    // ✅ FIX: Lấy token mới nhất
-    const currentToken = token || localStorage.getItem('auth_token');
-
-    setHistoryLoading(true);
-    try {
-      const res = await fetch(`http://localhost:3001/api/chatbot/history/${userId}`, {
-        headers: currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {}
-      });
-
-      if (res.status === 401) {
-        handleAuthExpired();
-        return;
-      }
-
-      const data = await res.json();
-      if (data.success) {
-        setMessages(data.data);
-        setCache(data.data);
-      }
-    } catch (err) {
-      console.error("[ChatHistory] Refresh error:", err);
-    } finally {
-      setHistoryLoading(false);
-    }
-  }, [userId, token, handleAuthExpired]);
 
   // ============================================
   // SEND MESSAGE
