@@ -173,6 +173,7 @@
   border: 1.5px solid #ffe4e1;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   word-wrap: break-word;
+  white-space: pre-line;
 }
 
 .msgUser {
@@ -185,6 +186,7 @@
   border: 1.5px solid #b3d9ff;
   box-shadow: 0 2px 8px rgba(0, 102, 255, 0.1);
   word-wrap: break-word;
+  white-space: pre-line;
 }
 
 /* Loading indicator */
