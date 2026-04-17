@@ -3,8 +3,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import styles from './ChatShortcut.module.css';
 
 const defaultSuggestions = [
-  'Xem món đắt nhất',
-  'Xem món rẻ nhất',
   'Xem món bán chạy',
   'Hướng dẫn đặt hàng',
   'Cách kiểm tra đơn hàng',
@@ -174,9 +172,6 @@ export default function ChatShortcut() {
         setShowSuggestions(true);
       } else if (q.toLowerCase().includes("đơn")) {
         setDynamicSuggestions(["Cách kiểm tra đơn hàng", "Hướng dẫn đánh giá đơn hàng"]);
-        setShowSuggestions(true);
-      } else if (q.toLowerCase().includes("món")) {
-        setDynamicSuggestions(["Xem món đắt nhất", "Xem món rẻ nhất", "Xem món bán chạy"]);
         setShowSuggestions(true);
       } else {
         setDynamicSuggestions(defaultSuggestions);
