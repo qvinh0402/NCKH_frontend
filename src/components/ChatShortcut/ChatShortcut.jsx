@@ -47,6 +47,77 @@ const clearCache = () => {
 };
 
 // ============================================
+// SAVED CHATS UTILITIES - 24h TTL per chat
+// ============================================
+const SAVED_CHATS_KEY = 'saved_chats';
+const SAVED_CHAT_TTL = 24 * 60 * 60 * 1000;
+
+const getSavedChats = () => {
+  try {
+    const saved = localStorage.getItem(SAVED_CHATS_KEY);
+    if (!saved) return [];
+    const chats = JSON.parse(saved);
+    // Filter out expired chats
+    const now = Date.now();
+    const validChats = chats.filter(chat => now <= chat.expiry);
+    // If any expired, update storage
+    if (validChats.length < chats.length) {
+      if (validChats.length > 0) {
+        localStorage.setItem(SAVED_CHATS_KEY, JSON.stringify(validChats));
+      } else {
+        localStorage.removeItem(SAVED_CHATS_KEY);
+      }
+    }
+    return validChats;
+  } catch {
+    localStorage.removeItem(SAVED_CHATS_KEY);
+    return [];
+  }
+};
+
+const saveChatSnapshot = (messages, title) => {
+  try {
+    const newChat = {
+      id: `chat_${Date.now()}`,
+      title: title || `Chat ${new Date().toLocaleString('vi-VN')}`,
+      messages: messages,
+      savedAt: new Date().toLocaleString('vi-VN'),
+      expiry: Date.now() + SAVED_CHAT_TTL
+    };
+    const chats = getSavedChats();
+    chats.push(newChat);
+    localStorage.setItem(SAVED_CHATS_KEY, JSON.stringify(chats));
+    return newChat;
+  } catch (err) {
+    console.error('[SavedChats] Save error:', err);
+    return null;
+  }
+};
+
+const deleteSavedChat = (chatId) => {
+  try {
+    let chats = getSavedChats();
+    chats = chats.filter(chat => chat.id !== chatId);
+    if (chats.length > 0) {
+      localStorage.setItem(SAVED_CHATS_KEY, JSON.stringify(chats));
+    } else {
+      localStorage.removeItem(SAVED_CHATS_KEY);
+    }
+  } catch (err) {
+    console.error('[SavedChats] Delete error:', err);
+  }
+};
+
+const getTimeRemaining = (expiryTime) => {
+  const now = Date.now();
+  const remaining = expiryTime - now;
+  if (remaining <= 0) return 'Hết hạn';
+  const hours = Math.floor(remaining / (1000 * 60 * 60));
+  const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+  return `${hours}h ${minutes}p còn lại`;
+};
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 export default function ChatShortcut() {
@@ -72,6 +143,11 @@ export default function ChatShortcut() {
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [dynamicSuggestions, setDynamicSuggestions] = useState(defaultSuggestions);
+  const [showSavedChats, setShowSavedChats] = useState(false);
+  const [savedChats, setSavedChats] = useState([]);
+  const [saveTitle, setSaveTitle] = useState('');
+  const [showSaveForm, setShowSaveForm] = useState(false);
+  const [saveNotification, setSaveNotification] = useState(null);
 
   const endRef = useRef(null);
   const userId = user?.maTaiKhoan || 'guest';
@@ -113,6 +189,20 @@ export default function ChatShortcut() {
   }, [messages, open]);
 
   // ============================================
+  // LOAD SAVED CHATS
+  // ============================================
+  useEffect(() => {
+    const chats = getSavedChats();
+    setSavedChats(chats);
+    // Check for expired chats and notify
+    chats.forEach(chat => {
+      if (Date.now() > chat.expiry) {
+        setSaveNotification({ type: 'info', message: `Đoạn chat "${chat.title}" đã hết hạn lưu trữ (24h)` });
+      }
+    });
+  }, [showSavedChats]);
+
+  // ============================================
   // Xử lý token hết hạn
   // ============================================
   const handleAuthExpired = useCallback(() => {
@@ -123,6 +213,78 @@ export default function ChatShortcut() {
     clearCache();
 
   }, []);
+
+  // ============================================
+  // SAVE CHAT SNAPSHOT
+  // ============================================
+  const handleSaveChat = () => {
+    if (messages.length <= 2) {
+      setSaveNotification({ type: 'warning', message: 'Không có đoạn chat để lưu!' });
+      setTimeout(() => setSaveNotification(null), 3000);
+      return;
+    }
+    setShowSaveForm(true);
+  };
+
+  const handleConfirmSave = () => {
+    const title = saveTitle.trim() || `Chat ${new Date().toLocaleTimeString('vi-VN')}`;
+    const savedChat = saveChatSnapshot(messages, title);
+    
+    if (savedChat) {
+      setSaveNotification({ 
+        type: 'success', 
+        message: `✅ Lưu thành công: "${title}" (24h)` 
+      });
+      setSaveTitle('');
+      setShowSaveForm(false);
+      const updated = getSavedChats();
+      setSavedChats(updated);
+      setTimeout(() => setSaveNotification(null), 3000);
+    } else {
+      setSaveNotification({ 
+        type: 'error', 
+        message: 'Lỗi khi lưu đoạn chat' 
+      });
+      setTimeout(() => setSaveNotification(null), 3000);
+    }
+  };
+
+  const handleLoadChat = (chatId) => {
+    const chat = savedChats.find(c => c.id === chatId);
+    if (chat) {
+      if (Date.now() > chat.expiry) {
+        deleteSavedChat(chatId);
+        setSaveNotification({ 
+          type: 'info', 
+          message: '⏰ Đoạn chat đã hết hạn (24h) và bị xóa tự động' 
+        });
+        const updated = getSavedChats();
+        setSavedChats(updated);
+        setTimeout(() => setSaveNotification(null), 3000);
+        return;
+      }
+      setMessages(chat.messages);
+      setShowSavedChats(false);
+      setSaveNotification({ 
+        type: 'success', 
+        message: `📂 Tải đoạn chat: "${chat.title}"` 
+      });
+      setTimeout(() => setSaveNotification(null), 2000);
+    }
+  };
+
+  const handleDeleteChat = (chatId) => {
+    if (window.confirm('Xác nhận xóa đoạn chat này?')) {
+      deleteSavedChat(chatId);
+      const updated = getSavedChats();
+      setSavedChats(updated);
+      setSaveNotification({ 
+        type: 'success', 
+        message: '🗑️ Xóa đoạn chat thành công' 
+      });
+      setTimeout(() => setSaveNotification(null), 2000);
+    }
+  };
 
   // ============================================
   // SEND MESSAGE
@@ -222,6 +384,20 @@ export default function ChatShortcut() {
           <div className={styles.chatHeader}>
             <span>Hỗ trợ khách hàng</span>
             <div className={styles.headerActions}>
+              <button 
+                onClick={handleSaveChat} 
+                title="Lưu đoạn chat" 
+                className={styles.iconBtn}
+              >
+                💾
+              </button>
+              <button 
+                onClick={() => setShowSavedChats(!showSavedChats)} 
+                title="Xem đoạn chat đã lưu" 
+                className={styles.iconBtn}
+              >
+                📂
+              </button>
               <button className={styles.headerClose} onClick={() => setOpen(false)}>✕</button>
             </div>
           </div>
@@ -264,6 +440,103 @@ export default function ChatShortcut() {
       <button className={styles.fab} onClick={() => { setOpen(s => !s); setShowBubble(false); }}>
         {open ? '✕' : '💬'}
       </button>
+
+      {/* SAVED CHATS PANEL */}
+      {showSavedChats && open && (
+        <div className={styles.savedChatsPanel}>
+          <div className={styles.panelHeader}>
+            <h4>📂 Đoạn chat đã lưu</h4>
+            <button 
+              onClick={() => setShowSavedChats(false)} 
+              className={styles.panelClose}
+            >
+              ✕
+            </button>
+          </div>
+          
+          {savedChats.length === 0 ? (
+            <div className={styles.emptyState}>Chưa có đoạn chat nào được lưu</div>
+          ) : (
+            <div className={styles.chatsList}>
+              {savedChats.map(chat => (
+                <div key={chat.id} className={styles.chatItem}>
+                  <div className={styles.chatInfo}>
+                    <div className={styles.chatTitle}>{chat.title}</div>
+                    <div className={styles.chatMeta}>
+                      💬 {chat.messages.length} tin nhắn • {chat.savedAt}
+                    </div>
+                    <div className={styles.chatExpiry}>
+                      ⏰ {getTimeRemaining(chat.expiry)}
+                    </div>
+                  </div>
+                  <div className={styles.chatActions}>
+                    <button 
+                      onClick={() => handleLoadChat(chat.id)}
+                      className={styles.loadBtn}
+                      title="Tải"
+                    >
+                      📥
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteChat(chat.id)}
+                      className={styles.deleteBtn}
+                      title="Xóa"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SAVE CHAT FORM */}
+      {showSaveForm && open && (
+        <div className={styles.saveFormModal}>
+          <div className={styles.saveFormContent}>
+            <h5>💾 Lưu đoạn chat</h5>
+            <input
+              type="text"
+              placeholder="Nhập tên cho đoạn chat (tùy chọn)..."
+              value={saveTitle}
+              onChange={(e) => setSaveTitle(e.target.value)}
+              maxLength={50}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleConfirmSave();
+                if (e.key === 'Escape') setShowSaveForm(false);
+              }}
+              className={styles.saveInput}
+              autoFocus
+            />
+            <div className={styles.saveFormActions}>
+              <button 
+                onClick={handleConfirmSave}
+                className={styles.saveBtn}
+              >
+                ✅ Lưu
+              </button>
+              <button 
+                onClick={() => setShowSaveForm(false)}
+                className={styles.cancelBtn}
+              >
+                ❌ Hủy
+              </button>
+            </div>
+            <div className={styles.saveInfo}>
+              ⏱️ Sẽ được lưu trong 24h
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NOTIFICATION */}
+      {saveNotification && (
+        <div className={`${styles.notification} ${styles[`notification-${saveNotification.type}`]}`}>
+          {saveNotification.message}
+        </div>
+      )}
     </div>
   );
 }
