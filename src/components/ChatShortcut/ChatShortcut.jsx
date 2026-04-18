@@ -215,9 +215,50 @@ export default function ChatShortcut() {
   }, []);
 
   // ============================================
+  // LOGOUT EVENT HANDLER - Clear chatbot data
+  // ============================================
+  useEffect(() => {
+    if (!isAuthenticated) {
+      // Reset messages to default greetings
+      setMessages([
+        { from: 'bot', text: 'Xin chào Quý Khách! Tôi là trợ lý AI của Secret Pizza 😊' },
+        { from: 'bot', text: 'Tôi rất sẵn lòng hỗ trợ Bạn' }
+      ]);
+      
+      // Clear input field
+      setText('');
+      
+      // Clear saved chats UI state
+      setSavedChats([]);
+      setShowSavedChats(false);
+      setShowSaveForm(false);
+      setSaveTitle('');
+      
+      // Clear notifications
+      setSaveNotification(null);
+      
+      // Clear cache
+      clearCache();
+      
+      // Reset suggestions
+      setDynamicSuggestions([...defaultSuggestions]);
+    }
+  }, [isAuthenticated]);
+
+  // ============================================
   // SAVE CHAT SNAPSHOT
   // ============================================
   const handleSaveChat = () => {
+    // ✅ CHECK LOGIN REQUIREMENT
+    if (!isAuthenticated) {
+      setSaveNotification({ 
+        type: 'error', 
+        message: '🔒 Vui lòng đăng nhập để lưu đoạn chat!' 
+      });
+      setTimeout(() => setSaveNotification(null), 4000);
+      return;
+    }
+
     if (messages.length <= 2) {
       setSaveNotification({ type: 'warning', message: 'Không có đoạn chat để lưu!' });
       setTimeout(() => setSaveNotification(null), 3000);
@@ -250,6 +291,16 @@ export default function ChatShortcut() {
   };
 
   const handleLoadChat = (chatId) => {
+    // ✅ CHECK LOGIN REQUIREMENT
+    if (!isAuthenticated) {
+      setSaveNotification({ 
+        type: 'error', 
+        message: '🔒 Vui lòng đăng nhập để tải đoạn chat!' 
+      });
+      setTimeout(() => setSaveNotification(null), 4000);
+      return;
+    }
+
     const chat = savedChats.find(c => c.id === chatId);
     if (chat) {
       if (Date.now() > chat.expiry) {
@@ -274,6 +325,16 @@ export default function ChatShortcut() {
   };
 
   const handleDeleteChat = (chatId) => {
+    // ✅ CHECK LOGIN REQUIREMENT
+    if (!isAuthenticated) {
+      setSaveNotification({ 
+        type: 'error', 
+        message: '🔒 Vui lòng đăng nhập để xóa đoạn chat!' 
+      });
+      setTimeout(() => setSaveNotification(null), 4000);
+      return;
+    }
+
     if (window.confirm('Xác nhận xóa đoạn chat này?')) {
       deleteSavedChat(chatId);
       const updated = getSavedChats();
@@ -392,7 +453,18 @@ export default function ChatShortcut() {
                 💾
               </button>
               <button 
-                onClick={() => setShowSavedChats(!showSavedChats)} 
+                onClick={() => {
+                  // ✅ CHECK LOGIN REQUIREMENT
+                  if (!isAuthenticated) {
+                    setSaveNotification({ 
+                      type: 'error', 
+                      message: '🔒 Vui lòng đăng nhập để xem đoạn chat đã lưu!' 
+                    });
+                    setTimeout(() => setSaveNotification(null), 4000);
+                    return;
+                  }
+                  setShowSavedChats(!showSavedChats);
+                }}
                 title="Xem đoạn chat đã lưu" 
                 className={styles.iconBtn}
               >
